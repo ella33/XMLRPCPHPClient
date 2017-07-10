@@ -1,5 +1,9 @@
 <?php
+  include_once 'Param.php';
+  include_once 'Book.php';
+
   class XMLRpcRequest {
+    const XML_ROOT          = '<?xml version="1.0"?><methodCall></methodCall>';
     const METHOD_CALL       = 'methodCall';
     const METHOD_NAME       = 'methodName';
     const BOOK_NODE         = array(
@@ -22,70 +26,54 @@
     const GET_BOOK_BY_TITLE = 'GetBookByTitle';
     const GET_BOOKS         = 'GetBooks';
 
+    public $xmlDoc;
 
-
-    private function init() {
-      $this->xmlDoc = new DOMDocument();
-
-      //create the root element
-      $this->root = $this->xmlDoc->appendChild($this->xmlDoc->createElement(METHOD_CALL));
-             
-      //make the output pretty
-      $this->xmlDoc->formatOutput = true;
-    }
-
-    private function saveXML() {
-      $this->xmlDoc->saveXML();
+    public function __construct() {
+      $this->xmlDoc = new SimpleXMLElement(self::XML_ROOT);
     }
 
     private function addMethodName($name) {
-      $this->root->appendChild($this->xmlDoc->createElement(METHOD_NAME), $name);
+      $this->xmlDoc->addChild(self::METHOD_NAME, $name);
     }
 
-    private function addMetodParams($params) {
-      $params = $this->root->appendChild($this->xmlDoc->createElement(PARAMS)); 
-      $param = $params->appendChild($this->xmlDoc->createElement(PARAM));
+    private function addBookParam($book, $value) {
+      $bookNode = $value->addChild(self::BOOK_NODE['ROOT']);
+      $bookNode->addChild(self::BOOK_NODE['TITLE'], $book->title);
+      $bookNode->addChild(self::BOOK_NODE['AUTHOR'], $book->author);
+      $bookNode->addChild(self::BOOK_NODE['PRICE'], $book->price);
+    }
 
-      if (is_object($params->value)) {
-        $value = $param->appendChild($this->xmlDoc->createElement(VALUE));
-        $bookNode = $value->appendChild($this->xmlDoc->createElement(BOOK_NODE['ROOT']));
-        $bookNode->appendChild(
-          $this->xmlDoc->createElement(BOOK_NODE['TITLE'], $params->value->title));
-        $bookNode->appendChild(
-          $this->xmlDoc->createElement(BOOK_NODE['AUTHOR'], $params->value->author));
-        $bookNode->appendChild(
-          $this->xmlDoc->createElement(BOOK_NODE['PRICE'], $params->value->price));
+    private function addMethodParams($parameters) {
+      $params = $this->xmlDoc->addChild(self::PARAMS);
+      $param = $params->addChild(self::PARAM);
+
+      if (is_object($parameters->value)) {
+        $value = $param->addChild(self::VALUE);
+        $this->addBookParam($parameters->value, $value);
       } else {
-        $value = $param->appendChild($this->xmlDoc->createElement(VALUE, $params->value));
+        $value = $param->addChild(self::VALUE, $parameters->value);
       }
-      $value->setAttribute(TYPE, $params->type);
+      $value->addAttribute(self::TYPE, $parameters->type);
     }
 
     public function addBook($title, $author, $price) {
-      init();
-      addMethodName(ADD_BOOK);
-      addMethodParams(new Param(
-        new Book(null, $title, $author, $price)), PARAM_TYPES['XML']);
-      saveXML();
+      $this->addMethodName(self::ADD_BOOK);
+      $this->addMethodParams(new Param(
+        new Book(null, $title, $author, $price), self::PARAM_TYPES['XML']));
     }
 
     public function deleteBook($id) {
-      init();
-      addMethodName(DELETE_BOOK);
-      addMethodParams(new Param($id, PARAM_TYPES['INT']));
-      saveXML();
+      $this->addMethodName(self::DELETE_BOOK);
+      $this->addMethodParams(new Param($id, self::PARAM_TYPES['INT']));
     }
 
     public function getBooks() {
-      init();
-      addMethodName(GET_BOOKS);
-      saveXML();
+      $this->addMethodName(self::GET_BOOKS);
     }
 
     public function getBookByTitle($title) {
-      init();
-      addMethodName(GET_BOOK_BY_TITLE);
-      addMethodParams(new Param($title, PARAM_TYPES['STRING']));
-      saveXML();
+      $this->addMethodName(self::GET_BOOK_BY_TITLE);
+      $this->addMethodParams(new Param($title, self::PARAM_TYPES['STRING']));
     }
   }
+?>

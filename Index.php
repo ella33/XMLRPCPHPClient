@@ -54,7 +54,7 @@
 
     private function exit() {
       $this->stop = true;
-      echo ">>> BYE BYE!\n";
+      echo ">>> BYE BYE\n";
     }
 
     private function getBooks() {
